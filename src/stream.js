@@ -1,13 +1,5 @@
 var Stream = (function() {
 
-    var lazy = function(fun) {
-        var parameters = [].splice.call(arguments, 1);
-
-        return function() {
-            var args = parameters.concat([].slice.call(arguments, 0));
-            return fun.apply(fun, args);
-        };
-    };
 
     var isFunction = function(obj) {
         return !!(obj && obj.constructor && obj.call && obj.apply);
@@ -18,9 +10,9 @@ var Stream = (function() {
 
         this.generate = function(seed, fun) {
             var loop = function(seed) {
-                return new Cons(seed, lazy(function() {
+                return new Cons(seed, function() {
                     return loop(fun(seed));
-                }));
+                });
             };
 
             return loop(seed);
@@ -28,9 +20,9 @@ var Stream = (function() {
 
         this.generateFromStream = function(stream, fun) {
             var loop = function(stream) {
-                return new Cons(stream.head(), lazy(function() {
+                return new Cons(stream.head(), function() {
                     return loop(fun(stream));
-                }));
+                });
             };
 
             return loop(stream);
@@ -43,25 +35,41 @@ var Stream = (function() {
                 return new Empty();
             } else {
                 var that = this;
-                return new Cons(fun(this.head()), lazy(function() {
+                return new Cons(fun(this.head()), function() {
                     return that.tail().map(fun);
-                }));
+                });
             }
         };
+        
+        this.append = function(stream){
+           console.log("append");
+           if (this.isEmpty()) {
+               return stream;
+           } else if(stream.isEmpty()){
+               return this;
+           } else{
+               var that = this;
+               return new Cons(that.head(), function(){
+                   return that.tail().append(stream);
+               });
+           }
+        };
+               
+                
 
         this.take = function(number) {
             //console.log("take: " + number);
             if (this.isEmpty() || number <= 0) {
                 return new Empty();
             } else if (number === 1) {
-                return new Cons(this.head(), lazy(function() {
+                return new Cons(this.head(), function() {
                     return new Empty();
-                }));
+                });
             } else {
                 var that = this;
-                return new Cons(this.head(), lazy(function() {
+                return new Cons(this.head(), function() {
                     return that.tail().take(number - 1);
-                }));
+                });
             }
         };
 
@@ -70,9 +78,9 @@ var Stream = (function() {
                 return new Empty();
             } else {
                 var that = this;
-                return new Cons(this.head(), lazy(function() {
+                return new Cons(this.head(), function() {
                     return that.tail().takeWhile(predicate);
-                }));
+                });
             }
         };
 
@@ -83,9 +91,9 @@ var Stream = (function() {
                 //console.log("filter: " + this.head());
                 var that = this;
                 if (predicate(this.head())) {
-                    return new Cons(this.head(), lazy(function() {
+                    return new Cons(this.head(), function() {
                         return that.tail().filter(predicate);
-                    }));
+                    });
                 } else {
                     return that.tail().filter(predicate);
                 }
@@ -122,9 +130,9 @@ var Stream = (function() {
                 return new Empty();
             } else {
                 var that = this;
-                return new Cons({one: this.head(), two: stream.head()}, lazy(function() {
+                return new Cons({one: this.head(), two: stream.head()}, function() {
                     return that.tail().zip(stream.tail());
-                }));
+                });
             }
         };
 
@@ -197,9 +205,9 @@ var Stream = (function() {
             if (source === undefined || source.length === 0) {
                 return new Empty();
             } else {
-                return new Cons(source[0], lazy(function() {
+                return new Cons(source[0], function() {
                     return init(source.splice(1));
-                }));
+                });
             }
         };
 
